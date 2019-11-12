@@ -48,16 +48,31 @@
 
 ;; consuming..
 
+(defn customer-records->maps [cs]
+  (-> (map gregor/consumer-record->map cs)
+      seq))
+
+(defn poll
+  "fetches sequetially from the last consumed offset
+   return 'org.apache.kafka.clients.consumer.ConsumerRecords' currently available to the consumer (via a single poll)
+   if a 'timeout' param is 0, returns immediately with any records that are available now."
+  ([consumer] (poll consumer 100))
+  ([consumer timeout]
+   (.poll consumer timeout)))
+
 (defn consumer [conf]
   (log/info "consumer config:" (edn-to-consumer conf))
   (->> (edn-to-consumer conf)
        (apply gregor/consumer)))
 
-(defn consume [consumer process running? ms n]
+(defn consume
+  "the 'process' function will take 'org.apache.kafka.clients.consumer.ConsumerRecords'
+   which can be turns to a seq of maps with 'customer-records->maps'"
+  [consumer process running? ms n]
   (log/info "starting" (inc n) "consumer")
   (while @running?
     (try
-      (let [consumer-records (gregor/poll consumer ms)]
+      (let [consumer-records (poll consumer ms)]
         (when consumer-records
           (process consumer consumer-records)
           (gregor/commit-offsets! consumer)))
