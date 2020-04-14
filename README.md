@@ -2,7 +2,7 @@
 
 is [gregor](https://github.com/ccann/gregor)'s sister that adds a threadpool and a scheduler
 
-... and some Java API
+... and some Java API<br/>
 ... and the latest kafka (at the moment of writing)
 
 ## spilling the beans
@@ -12,39 +12,42 @@ $ boot repl
 
 => (require '[grete.core :as g])
 ```
+
+it is quite common for the same app to produce and consume,<br/>
+hence we'll use one config for producing and consuming:
+
 ```clojure
 -=> (def config {:kafka
                  {:producer
-                  {:bootstrap-servers "1.1.1.1:9092,2.2.2.2:9092,3.3.3.3:9092"
-                   :key-serializer   "org.apache.kafka.common.serialization.ByteArraySerializer"
-                   :value-serializer "org.apache.kafka.common.serialization.ByteArraySerializer"}
+                  {:bootstrap-servers "1.1.1.1:9092,2.2.2.2:9092,3.3.3.3:9092"}
                   :consumer
-                  {:poll-ms 10
-                   :heartbeat-interval-ms "3000"
-                   :value-deserializer "org.apache.kafka.common.serialization.ByteArrayDeserializer"
-                   :group-id "foobar-consumer-group"
-                   :default-api-timeout-ms "600000"
+                  {:group-id "foobar-consumer-group"
                    :bootstrap-servers "1.1.1.1:9092,2.2.2.2:9092,3.3.3.3:9092"
                    :topics ["foos" "bars" "bazs"]
                    :threads 42
-                   :enable-auto-commit "false"
-                   :auto-offset-reset "earliest"
-                   :key-deserializer "org.apache.kafka.common.serialization.ByteArrayDeserializer"
-                   :session-timeout-ms "30000"}}})
+                   :auto-offset-reset "earliest"}}})
 ```
+
+### produce
+
+produce a couple of messages (to `foos` topic):
 
 ```clojure
 => (def p (g/producer "foos" (get-in config [:kafka :producer])))
 
-=> (g/send! p (.getBytes "{\"answer\": 42}"))
-=> (g/send! p (.getBytes "{\"answer\": 42}"))
+=> (g/send! p "{:answer 42}")
+=> (g/send! p "{:answer 42}")
 
 => (g/close p)
 ```
 
+### consume
+
+a sample consuming function "`process`":
+
 ```clojure
 ;; the "process" function will takes a batch of 'org.apache.kafka.clients.consumer.ConsumerRecords'
-;; which can be turns to a seq of maps with 'consumer-records->maps'"
+;; which can be turned to a seq of maps with 'consumer-records->maps'"
 
 => ;; not using "consumer" arg here, but you may
    (defn process [consumer batch]
@@ -52,24 +55,40 @@ $ boot repl
            bsize (count batch)]
        (when (pos? bsize)
          (println "picked up" bsize "events:" batch))))
+```
 
+the idea behind `grete` is to be able to start a farm of kafka consumers that listen to (potentially) multiple topics and apply a simple consuming function.
+
+start a farm of consumers (`42` threads as per config):
+
+```clojure
 => (def consumers (g/run-consumers process (get-in config [:kafka :consumer])))
+```
 
-;; picked up 2 events: ({:value #object[[B 0x3b050104 [B@3b050104],
+once the "farm" is started you'll see those two messages that were produces above:
+
+```clojure
+;; picked up 2 events: ({:value {:answer 42},
                          :key #object[[B 0x65ae581f [B@65ae581f],
                          :partition 2,
                          :topic foos,
                          :offset 1000,
                          :timestamp 1586888551200,
                          :timestamp-type CreateTime}
-                        {:value #object[[B 0x623f0f09 [B@623f0f09],
+                        {:value {:answer 42},
                          :key #object[[B 0x499b3437 [B@499b3437],
                          :partition 2,
                          :topic foos,
                          :offset 1001,
                          :timestamp 1586889147336,
                          :timestamp-type CreateTime})
+```
 
+values here are strings, but could be byte arrays given bytearray de/serializers.
+
+as with other thread pools, it's a good idea to shut them down once we done working with them:
+
+```clojure
 => (g/stop-consumers consumers)
 ```
 
