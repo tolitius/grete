@@ -8,7 +8,7 @@
                                               ConsumerRecords]))
 
 (gen-class
-  :name fn42.Grete
+  :name tolitius.Grete
   :methods [^{:static true} [startConsumers [java.util.function.BiConsumer
                                              java.util.Map] java.util.Map]
             ^{:static true} [stopConsumers [java.util.Map] void]

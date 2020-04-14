@@ -15,19 +15,21 @@
     (for [[k v] conf]
       [(to-prop k) v])))
 
-(defn create-topic [{:keys [name] :as topic}
+;; TODO: waiting on gregor fix for: https://github.com/apache/kafka/pull/5480
+#_(defn create-topic [{:keys [name] :as topic}
                     {:keys [zookeeper]}]
   (let [zoo {:connection-string (zookeeper :hosts)}]
     (when-not (gregor/topic-exists? zoo name)
       (gregor/create-topic zoo name topic))))
 
-(defn producer [topic {:keys [kafka] :as conf}]
-  (let [serializers (-> (select-keys (kafka :producer)
-                                 [:key-serializer :value-serializer])
+(defn producer [topic {:keys [bootstrap-servers] :as conf}]
+  (let [serializers (-> (select-keys conf
+                                     [:key-serializer :value-serializer])
                         to-props)]
-    (create-topic topic conf)
-    {:producer (gregor/producer (kafka :bootstrap-servers) serializers)
-     :topic (topic :name)}))
+    ; (create-topic topic conf)
+    {:producer (gregor/producer bootstrap-servers
+                                serializers)
+     :topic topic}))
 
 (defn send!
   ([{:keys [producer topic]} msg]
@@ -48,7 +50,7 @@
 
 ;; consuming..
 
-(defn customer-records->maps [cs]
+(defn consumer-records->maps [cs]
   (-> (map gregor/consumer-record->map cs)
       seq))
 
@@ -67,7 +69,7 @@
 
 (defn consume
   "the 'process' function will take 'org.apache.kafka.clients.consumer.ConsumerRecords'
-   which can be turns to a seq of maps with 'customer-records->maps'"
+   which can be turns to a seq of maps with 'consumer-records->maps'"
   [consumer process running? ms n]
   (log/info "starting" (inc n) "consumer")
   (while @running?

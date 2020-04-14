@@ -1,0 +1,25 @@
+;; not using consumer here, but you may
+(defn process [consumer batch]
+  (let [batch (g/consumer-records->maps batch)
+        bsize (count batch)]
+    (when (pos? bsize)
+      (println "picked up" bsize "events:" batch))))
+
+(def config {:kafka
+             {:producer
+              {:bootstrap-servers "1.1.1.1:9092,2.2.2.2:9092,3.3.3.3:9092"
+               :key-serializer   "org.apache.kafka.common.serialization.ByteArraySerializer"
+               :value-serializer "org.apache.kafka.common.serialization.ByteArraySerializer"}
+              :consumer
+              {:poll-ms 10
+               :heartbeat-interval-ms "3000"
+               :value-deserializer "org.apache.kafka.common.serialization.ByteArrayDeserializer"
+               :group-id "foobar-consumer-group"
+               :default-api-timeout-ms "600000"
+               :bootstrap-servers "1.1.1.1:9092,2.2.2.2:9092,3.3.3.3:9092"
+               :topics ["foos" "bars" "bazs"]
+               :threads 42
+               :enable-auto-commit "false"
+               :auto-offset-reset "earliest"
+               :key-deserializer "org.apache.kafka.common.serialization.ByteArrayDeserializer"
+               :session-timeout-ms "30000"}}})
