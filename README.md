@@ -5,6 +5,8 @@ is [gregor](https://github.com/ccann/gregor)'s sister that adds a threadpool and
 ... and some Java API<br/>
 ... and the latest kafka (at the moment of writing)
 
+the idea behind `grete` is to be able to start a farm of kafka consumers that listen to (potentially) multiple topics and apply a simple consuming function.
+
 ## spilling the beans
 
 ```clojure
@@ -56,8 +58,6 @@ a sample consuming function "`process`":
        (when (pos? bsize)
          (println "picked up" bsize "events:" batch))))
 ```
-
-the idea behind `grete` is to be able to start a farm of kafka consumers that listen to (potentially) multiple topics and apply a simple consuming function.
 
 start a farm of consumers (`42` threads as per config):
 
