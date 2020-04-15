@@ -68,20 +68,20 @@ start a farm of consumers (`42` threads as per config):
 once the "farm" is started you'll see those two messages that were produces above:
 
 ```clojure
-;; picked up 2 events: ({:value {:answer 42},
-                         :key #object[[B 0x65ae581f [B@65ae581f],
-                         :partition 2,
-                         :topic foos,
-                         :offset 1000,
-                         :timestamp 1586888551200,
-                         :timestamp-type CreateTime}
-                        {:value {:answer 42},
-                         :key #object[[B 0x499b3437 [B@499b3437],
-                         :partition 2,
-                         :topic foos,
-                         :offset 1001,
-                         :timestamp 1586889147336,
-                         :timestamp-type CreateTime})
+;;   picked up 2 events: ({:value {:answer 42},
+;;                         :key #object[[B 0x65ae581f [B@65ae581f],
+;;                         :partition 2,
+;;                         :topic foos,
+;;                         :offset 1000,
+;;                         :timestamp 1586888551200,
+;;                         :timestamp-type CreateTime}
+;;                       {:value {:answer 42},
+;;                         :key #object[[B 0x499b3437 [B@499b3437],
+;;                         :partition 2,
+;;                         :topic foos,
+;;                         :offset 1001,
+;;                         :timestamp 1586889147336,
+;;                         :timestamp-type CreateTime})
 ```
 
 values here are strings, but could be byte arrays given bytearray de/serializers.
