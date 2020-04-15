@@ -36,7 +36,7 @@
 (task-options!
   push {:ensure-branch nil}
   aot {:all true}
-  pom {:project     'fn42/grete
+  pom {:project     'tolitius/grete
        :version     +version+
        :description "where all configuration properties converge"
        :url         "https://github.com/tolitius/grete"
