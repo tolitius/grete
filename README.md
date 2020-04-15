@@ -27,6 +27,7 @@ hence we'll use one config for producing and consuming:
                    :bootstrap-servers "1.1.1.1:9092,2.2.2.2:9092,3.3.3.3:9092"
                    :topics ["foos" "bars" "bazs"]
                    :threads 42
+                   :poll-ms 10
                    :auto-offset-reset "earliest"}}})
 ```
 
