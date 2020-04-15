@@ -2,13 +2,13 @@
 
 is [gregor](https://github.com/ccann/gregor)'s sister that adds a threadpool and a scheduler
 
+[![<! release](https://img.shields.io/badge/dynamic/json.svg?label=release&url=https%3A%2F%2Fclojars.org%2Ftolitius%2Fgrete%2Flatest-version.json&query=version&colorB=blue)](https://github.com/tolitius/grete/releases)
+[![<! clojars](https://img.shields.io/clojars/v/tolitius/grete.svg)](https://clojars.org/tolitius/grete)
+
 ... and some Java API<br/>
 ... and the latest kafka (at the moment of writing)
 
 the idea behind `grete` is to be able to start a farm of kafka consumers that listen to (potentially) multiple topics and apply a simple consuming function.
-
-[![<! release](https://img.shields.io/badge/dynamic/json.svg?label=release&url=https%3A%2F%2Fclojars.org%2Ftolitius%2Fgrete%2Flatest-version.json&query=version&colorB=blue)](https://github.com/tolitius/grete/releases)
-[![<! clojars](https://img.shields.io/clojars/v/tolitius/grete.svg)](https://clojars.org/tolitius/grete)
 
 ## spilling the beans
 
