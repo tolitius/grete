@@ -1,6 +1,6 @@
 ## grete
 
-is [gregor](https://github.com/ccann/gregor)'s sister that adds a threadpool and a scheduler
+is [gregor](https://github.com/tolitius/grete/blob/master/src/grete/gregor.clj#L2)'s sister that adds a threadpool and a scheduler
 
 [![<! release](https://img.shields.io/badge/dynamic/json.svg?label=release&url=https%3A%2F%2Fclojars.org%2Ftolitius%2Fgrete%2Flatest-version.json&query=version&colorB=blue)](https://github.com/tolitius/grete/releases)
 [![<! clojars](https://img.shields.io/clojars/v/tolitius/grete.svg)](https://clojars.org/tolitius/grete)

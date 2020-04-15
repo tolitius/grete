@@ -1,10 +1,9 @@
-(def +version+ "0.1.1")
+(def +version+ "0.1.2")
 
 (set-env!
   :source-paths #{"src"}
   :dependencies '[[org.clojure/clojure             "1.10.1"]
                   [org.clojure/tools.logging       "1.0.0"]
-                  [tolitius/gregor                 "1.0.1"   :exclusions [org.apache.kafka/kafka_2.12]]
                   [org.apache.kafka/kafka_2.12     "2.4.1"]
 
                   ;; boot clj

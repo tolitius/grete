@@ -1,7 +1,7 @@
 (ns grete.core
   (:require [clojure.tools.logging :as log]
             [clojure.string :as s]
-            [gregor.core :as gregor]
+            [grete.gregor :as gregor]
             [grete.scheduler :as sch]))
 
 (defn to-prop [k]
