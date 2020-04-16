@@ -30,7 +30,7 @@ hence we'll use one config for producing and consuming:
                    :bootstrap-servers "1.1.1.1:9092,2.2.2.2:9092,3.3.3.3:9092"
                    :topics ["foos" "bars" "bazs"]
                    :threads 42
-                   :poll-ms 10
+                   :poll-ms 100
                    :auto-offset-reset "earliest"}}})
 ```
 
@@ -79,11 +79,11 @@ once the "farm" is started you'll see those two messages that were produces abov
 ;;                         :offset 1000,
 ;;                         :timestamp 1586888551200,
 ;;                         :timestamp-type CreateTime}
-;;                       {:value {:answer 42},
+;;                        {:value {:answer 42},
 ;;                         :key #object[[B 0x499b3437 [B@499b3437],
-;;                         :partition 2,
+;;                         :partition 13,
 ;;                         :topic foos,
-;;                         :offset 1001,
+;;                         :offset 3239,
 ;;                         :timestamp 1586889147336,
 ;;                         :timestamp-type CreateTime})
 ```
