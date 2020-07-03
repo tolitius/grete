@@ -52,7 +52,7 @@ produce a couple of messages (to `foos` topic):
 a sample consuming function "`process`":
 
 ```clojure
-;; the "process" function will takes a batch of 'org.apache.kafka.clients.consumer.ConsumerRecords'
+;; the "process" function takes a batch of 'org.apache.kafka.clients.consumer.ConsumerRecords'
 ;; which can be turned to a seq of maps with 'consumer-records->maps'"
 
 => ;; not using "consumer" arg here, but you may
