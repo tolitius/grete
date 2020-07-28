@@ -22,22 +22,23 @@
     (when-not (gregor/topic-exists? zoo name)
       (gregor/create-topic zoo name topic))))
 
-(defn producer [topic {:keys [bootstrap-servers] :as conf}]
+(defn producer [{:keys [bootstrap-servers] :as conf}]
   (let [serializers (-> (select-keys conf
                                      [:key-serializer :value-serializer])
                         to-props)]
-    ; (create-topic topic conf)
-    {:producer (gregor/producer bootstrap-servers
-                                serializers)
-     :topic topic}))
+    (gregor/producer bootstrap-servers
+                     serializers)))
 
 (defn send!
-  ([{:keys [producer topic]} msg]
+  "dummy gregor send wrap to:
+    1. give it a '!'
+    2. avoid requiring another ns to 'send'"
+  ([producer topic msg]
    (gregor/send producer topic msg))
-  ([{:keys [producer topic]} key msg]
+  ([producer topic key msg]
    (gregor/send producer topic key msg)))
 
-(defn close [{:keys [producer]}]
+(defn close [producer]
   (gregor/close producer))
 
 (defn- edn-to-consumer [{:keys [bootstrap-servers

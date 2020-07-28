@@ -1,14 +1,21 @@
-## grete
+# grete
 
 is [gregor](https://github.com/tolitius/grete/blob/master/src/grete/gregor.clj#L2)'s sister that adds a threadpool and a scheduler
 
 [![<! release](https://img.shields.io/badge/dynamic/json.svg?label=release&url=https%3A%2F%2Fclojars.org%2Ftolitius%2Fgrete%2Flatest-version.json&query=version&colorB=blue)](https://github.com/tolitius/grete/releases)
-[![<! clojars](https://img.shields.io/clojars/v/tolitius/grete.svg)](https://clojars.org/tolitius/grete)
+[![<! clojars>](https://img.shields.io/clojars/v/tolitius/grete.svg)](https://clojars.org/tolitius/grete)
 
 ... and some Java API<br/>
 ... and the latest kafka (at the moment of writing)
 
 the idea behind `grete` is to be able to start a farm of kafka consumers that listen to (potentially) multiple topics and apply a simple consuming function.
+
+- [spilling the beans](#spilling-the-beans)
+  - [produce](#produce)
+  - [consume](#consume)
+- [Java API](#java-api)
+  - [several topics at once](#several-topics-at-once)
+- [License](#license)
 
 ## spilling the beans
 
@@ -39,10 +46,11 @@ hence we'll use one config for producing and consuming:
 produce a couple of messages (to `foos` topic):
 
 ```clojure
-=> (def p (g/producer "foos" (get-in config [:kafka :producer])))
+=> (def p (g/producer (get-in config [:kafka :producer])))
 
-=> (g/send! p "{:answer 42}")
-=> (g/send! p "{:answer 42}")
+;; send a couple of messages to topics: "foos" and "bars"
+=> (g/send! p "foos" "{:answer 42}")
+=> (g/send! p "bars" "{:answer 42}")
 
 => (g/close p)
 ```
