@@ -4,11 +4,14 @@
   (:refer-clojure :exclude [flush send])
   (:import [org.apache.kafka.common TopicPartition]
            [org.apache.kafka.clients.consumer Consumer KafkaConsumer
-            ConsumerRecord OffsetAndMetadata OffsetCommitCallback
-            ConsumerRebalanceListener]
+                                              ConsumerRecord OffsetAndMetadata OffsetCommitCallback
+                                              ConsumerRebalanceListener]
            [org.apache.kafka.clients.producer Producer KafkaProducer Callback
-            ProducerRecord]
-           [java.util.concurrent TimeUnit])
+                                              ProducerRecord]
+           [java.util.concurrent TimeUnit]
+           [org.apache.kafka.clients.admin AdminClient NewTopic]
+           [java.util Properties Map]
+           [org.apache.kafka.clients CommonClientConfigs])
   (:require [clojure.string :as str]))
 
 (def ^:no-doc str-deserializer "org.apache.kafka.common.serialization.StringDeserializer")
@@ -18,7 +21,7 @@
 
 (defn- as-properties
   [m]
-  (let [ps (java.util.Properties.)]
+  (let [ps (Properties.)]
     (doseq [[k v] m] (.setProperty ps k v))
     ps))
 
@@ -441,3 +444,49 @@
        (merge config)
        (as-properties)
        (KafkaProducer.))))
+
+;;;;;;;;;;;;;;;;;;;;;;
+;; Topic Management ;;
+;;;;;;;;;;;;;;;;;;;;;;
+
+(defn create-topic
+  "Create a topic.
+  Args:
+    config: A map with kafka connection details as expected by kafka.
+      :name               (required) Name of the topic
+      :partitions         (optional) The number of ways to partition the topic.
+                                     Defaults to 1.
+      :replication-factor (optional) The replication factor for the topic.
+                                     Defaults to 1.
+  "
+  [^Map conf {:keys [^String name ^int partitions ^short replication-factor] :or {partitions 1 replication-factor 1}}]
+  (assert (contains? conf CommonClientConfigs/BOOTSTRAP_SERVERS_CONFIG) "bootstrap server config not present")
+  (with-open [^AdminClient ac (AdminClient/create conf)]
+    (.all (.createTopics ac [(NewTopic. name partitions replication-factor)]))))
+
+(defn topics
+  "Query existing topics.
+  Args:
+    config: A map with kafka connection details as expected by kafka."
+  [^Map conf]
+  (assert (contains? conf CommonClientConfigs/BOOTSTRAP_SERVERS_CONFIG) "bootstrap server config not present")
+  (with-open [^AdminClient ac (AdminClient/create conf)]
+    (set (.get (.names (.listTopics ac))))))
+
+(defn topic-exists?
+  "Query whether or not a topic exists.
+  Args:
+    config: A map with kafka connection details as expected by kafka.
+    topic: The name of the topic to check for."
+  [^Map conf ^String topic]
+    (contains? (topics conf) topic))
+
+(defn delete-topic
+  "Delete a topic.
+  Args:
+    config: A map with kafka connection details as expected by kafka.
+    topic: The name of the topic to delete."
+  [^Map conf ^String topic]
+  (assert (contains? conf CommonClientConfigs/BOOTSTRAP_SERVERS_CONFIG) "bootstrap server config not present")
+  (with-open [^AdminClient ac (AdminClient/create conf)]
+    (.all (.deleteTopics ac [topic]))))

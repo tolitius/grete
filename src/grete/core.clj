@@ -15,13 +15,6 @@
     (for [[k v] conf]
       [(to-prop k) v])))
 
-;; TODO: waiting on gregor fix for: https://github.com/apache/kafka/pull/5480
-#_(defn create-topic [{:keys [name] :as topic}
-                    {:keys [zookeeper]}]
-  (let [zoo {:connection-string (zookeeper :hosts)}]
-    (when-not (gregor/topic-exists? zoo name)
-      (gregor/create-topic zoo name topic))))
-
 (defn producer [{:keys [bootstrap-servers] :as conf}]
   (let [serializers (-> (select-keys conf
                                      [:key-serializer :value-serializer])
