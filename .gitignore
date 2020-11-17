@@ -1,8 +1,7 @@
 /target
 /classes
 /checkouts
-pom.xml
-pom.xml.asc
+.cpcache
 .repl*
 dev/resources/public/js/*
 figwheel_server.log
