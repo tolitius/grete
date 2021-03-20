@@ -16,11 +16,11 @@
       [(to-prop k) v])))
 
 (defn producer [{:keys [bootstrap-servers] :as conf}]
-  (let [serializers (-> (select-keys conf
-                                     [:key-serializer :value-serializer])
-                        to-props)]
+  (let [props (-> (dissoc conf :bootstrap-servers
+                               :topics)
+                  to-props)]
     (gregor/producer bootstrap-servers
-                     serializers)))
+                     props)))
 
 (defn send!
   "dummy gregor send wrap to:

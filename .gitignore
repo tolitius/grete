@@ -3,6 +3,7 @@
 /checkouts
 .cpcache
 .repl*
+.rebel*
 dev/resources/public/js/*
 figwheel_server.log
 build.xml

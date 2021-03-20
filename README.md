@@ -20,7 +20,7 @@ the idea behind `grete` is to be able to start a farm of kafka consumers that li
 ## spilling the beans
 
 ```clojure
-$ boot repl
+$ make repl
 
 => (require '[grete.core :as g])
 ```
@@ -29,16 +29,16 @@ it is quite common for the same app to produce and consume,<br/>
 hence we'll use one config for producing and consuming:
 
 ```clojure
--=> (def config {:kafka
-                 {:producer
-                  {:bootstrap-servers "1.1.1.1:9092,2.2.2.2:9092,3.3.3.3:9092"}
-                  :consumer
-                  {:group-id "foobar-consumer-group"
-                   :bootstrap-servers "1.1.1.1:9092,2.2.2.2:9092,3.3.3.3:9092"
-                   :topics ["foos" "bars" "bazs"]
-                   :threads 42
-                   :poll-ms 100
-                   :auto-offset-reset "earliest"}}})
+=> (def config {:kafka
+                {:producer
+                 {:bootstrap-servers "1.1.1.1:9092,2.2.2.2:9092,3.3.3.3:9092"}
+                 :consumer
+                 {:group-id "foobar-consumer-group"
+                  :bootstrap-servers "1.1.1.1:9092,2.2.2.2:9092,3.3.3.3:9092"
+                  :topics ["foos" "bars" "bazs"]
+                  :threads 42
+                  :poll-ms 100
+                  :auto-offset-reset "earliest"}}})
 ```
 
 ### produce
