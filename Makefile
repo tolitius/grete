@@ -22,4 +22,4 @@ tree:
 	mvn dependency:tree
 
 repl:
-	clojure -A:repl
+	clojure -A:dev -A:repl
