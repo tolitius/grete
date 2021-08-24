@@ -1,3 +1,7 @@
+# 0.1.7
+
+- add AOT back to support grete's Java API
+
 # 0.1.3
 
 - (!) producers are now created without a topic, so topics can be specified on `send!` ([commit](https://github.com/tolitius/grete/commit/d8735810ee433ab0f001a194f082522808d738a9))

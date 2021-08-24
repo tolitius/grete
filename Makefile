@@ -1,9 +1,14 @@
-.PHONY: clean jar tag outdated install deploy tree repl
+.PHONY: clean aot jar tag outdated install deploy tree repl
 
 clean:
 	rm -rf target
+	rm -rf classes
 
-jar: tag
+aot:
+	mkdir classes
+	clj -e "(compile 'grete.java-api)"
+
+jar: clean aot tag
 	clojure -A:jar
 
 outdated:
