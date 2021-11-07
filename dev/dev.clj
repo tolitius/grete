@@ -19,14 +19,14 @@
 
 ;; kafka streams
 
-(defn config [] {:application-id-config "exploring-canis-major-dwarf-galaxy"
-                 :client-id-config "galactic-disk"
-                 :bootstrap-servers-config "localhost:9092"
-                 :default-key-serde-class-config (-> (k/string-serde) .getClass .getName)
-                 :default-value-serde-class-config (-> (k/string-serde) .getClass .getName)})
+(def config {:application-id-config "exploring-canis-major-dwarf-galaxy"
+             :client-id-config "galactic-disk"
+             :bootstrap-servers-config "localhost:9092"
+             :default-key-serde-class-config (-> (k/string-serde) .getClass .getName)
+             :default-value-serde-class-config (-> (k/string-serde) .getClass .getName)})
 
-(defn filter-augment [augment]
-  (-> augment
+(defn find-stars [galaxy]
+  (-> galaxy
       (json/read-value json/keyword-keys-object-mapper)
       :stars
       (json/write-value-as-string json/keyword-keys-object-mapper)))
@@ -34,11 +34,11 @@
 
 (defn make-streams [builder]
   (-> (k/topic->stream builder "canis-systems")
-      (k/map-values filter-augment)
+      (k/map-values find-stars)
       (k/stream->topic "stars-with-planets"))
   builder)
 
 (defn start []
-  (let [topology (k/stream-on! (config) make-streams)]
+  (let [topology (k/stream-on! config make-streams)]
     (Thread/sleep 1000)
     (k/stop-topology topology)))
