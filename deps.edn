@@ -1,9 +1,18 @@
 {:paths ["src" "classes"]
 
  :deps {org.clojure/tools.logging {:mvn/version "1.1.0"}
-        org.apache.kafka/kafka-clients {:mvn/version "2.8.0"}}
+        metosin/jsonista {:mvn/version "0.3.4"}
+        org.apache.kafka/kafka-streams {:mvn/version "2.8.1"}}
 
- :aliases {:dev {:extra-deps {metosin/jsonista {:mvn/version "0.3.3"}}}
+ :aliases {:dev {:extra-paths ["dev" "dev-resources"]
+                 :extra-deps {metosin/jsonista {:mvn/version "0.3.4"}}}
+           :repl {;; :extra-paths ["test" "test/resources"]
+                  :extra-deps {nrepl/nrepl {:mvn/version "0.7.0"}
+                               cider/cider-nrepl {:mvn/version "0.22.4"}
+                               com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
+                  :main-opts ["-e" "(require 'dev)(in-ns 'dev)"
+                              "-m" "nrepl.cmdline" "--middleware" "[cider.nrepl/cider-middleware]"
+                              "-i" "-f" "rebel-readline.main/-main"]}
            :outdated {:extra-deps {olical/depot {:mvn/version "2.0.1"}}
                       :main-opts  ["-m" "depot.outdated.main" "-a" "outdated"]}
            :tag {:extra-deps {tolitius/tag {:mvn/version "0.1.7"}}

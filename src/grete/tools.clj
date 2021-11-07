@@ -10,6 +10,12 @@
   (when (seq xs)
     (s/split xs #",")))
 
+(defn kebab->screaming-snake [k]
+  (-> k
+      name
+      (s/replace #"-" "_")
+      s/upper-case))
+
 (defn fmv
   "apply f to each value v of map m"
   [m f]
