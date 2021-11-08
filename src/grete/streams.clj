@@ -91,8 +91,8 @@
   streams)
 
 (defn stream-on! [config make-topology]
-  (->> (stream-builder)
-       make-topology
-       (build-topology config)
-       cleanup-topology         ;;TODO: conditionilize, does not apply in production
-       start-topology))
+  (as-> (stream-builder) $
+        (make-topology $)
+        (build-topology config $)
+        (cleanup-topology $)         ;;TODO: conditionilize, does not apply in production
+        (start-topology $)))

@@ -35,8 +35,7 @@
 (defn make-streams [builder]
   (-> (k/topic->stream builder "canis-systems")
       (k/map-values find-stars)
-      (k/stream->topic "stars-with-planets"))
-  builder)
+      (k/stream->topic "stars-with-planets")))
 
 (defn start []
   (let [topology (k/stream-on! config make-streams)]
