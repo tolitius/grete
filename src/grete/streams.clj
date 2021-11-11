@@ -13,7 +13,8 @@
            [org.apache.kafka.streams.kstream Consumed
                                              KStream
                                              Produced
-                                             ValueMapper]))
+                                             ValueMapper
+                                             KeyValueMapper]))
 
 ;; config
 
@@ -88,6 +89,18 @@
 
 (defn map-values [stream fun]
   (.mapValues stream (FunValueMapper. fun)))
+
+(defn to-kv [[k v]]
+  (KeyValue. k v))
+
+(deftype FunKeyValueMapper [fun]
+  KeyValueMapper
+  (apply [_ k v]
+    (-> (fun k v)
+        to-kv)))
+
+(defn map-kv [stream fun]
+  (.map stream (FunKeyValueMapper. fun)))
 
 ;; topology plumbing
 
