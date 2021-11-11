@@ -65,6 +65,9 @@
 (defn long-serde []
   (Serdes/Long))
 
+(defn int-serde []
+  (Serdes/Integer))
+
 ;; directing flow
 
 (defn topic->stream
