@@ -1,5 +1,6 @@
 (ns grete.streams
-  (:require [grete.tools :as t]
+  (:require [clojure.string :as s]
+            [grete.tools :as t]
             [jsonista.core :as json])
   (:import [clojure.lang Reflector]
            [java.util Properties]
@@ -16,17 +17,33 @@
 
 ;; config
 
+
+; {:application-id-config "ecaf-snoop"
+;  :client-id-config "augment-plan-snooper"
+;  :bootstrap-servers-config "localhost:9092"
+;  :default-key-serde-class-config (-> (k/string-serde) .getClass .getName)
+;  :default-value-serde-class-config (-> (k/string-serde) .getClass .getName)
+
+;  :producer.max-request-size (int 16384255)
+;  :consumer.max-request-size (int 16384255)}
 (defn to-stream-prop [prop]
   (try
-    (->> prop
-         t/kebab->screaming-snake
-         (Reflector/getStaticField StreamsConfig))
+    (if (some #(s/starts-with? (name prop) %) #{StreamsConfig/CONSUMER_PREFIX
+                                                StreamsConfig/PRODUCER_PREFIX
+                                                StreamsConfig/ADMIN_CLIENT_PREFIX
+                                                StreamsConfig/GLOBAL_CONSUMER_PREFIX
+                                                StreamsConfig/MAIN_CONSUMER_PREFIX
+                                                StreamsConfig/RESTORE_CONSUMER_PREFIX
+                                                StreamsConfig/TOPIC_PREFIX})
+      (t/kebab->dotted prop)
+      (->> prop
+           t/kebab->screaming-snake
+           (Reflector/getStaticField StreamsConfig)))
     (catch Exception e
       (let [msg (str "kafka streams does not understand this property name \"" prop "\"")]
         (println "(!)" msg)
         (throw (RuntimeException. msg e))))))
 
-;; TODO: handle StreamsConfig.consumerPrefix/producerPrefix
 (defn to-stream-config [m]
   (let [ps (Properties.)]
     (doseq [[k v] m]

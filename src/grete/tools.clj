@@ -16,6 +16,11 @@
       (s/replace #"-" "_")
       s/upper-case))
 
+(defn kebab->dotted [k]
+  (-> k
+      name
+      (s/replace #"-" ".")))
+
 (defn fmv
   "apply f to each value v of map m"
   [m f]
