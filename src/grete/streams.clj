@@ -72,17 +72,19 @@
 
 (defn topic->stream
   ([builder topic]
-   (topic->stream builder topic {:key-serde (string-serde)
-                                 :value-serde (string-serde)}))
-  ([builder topic {:keys [key-serde value-serde]}]
+   (topic->stream builder topic {}))
+  ([builder topic {:keys [key-serde value-serde]
+                   :or {key-serde (string-serde)
+                        value-serde (string-serde)}}]
    (.stream builder topic (Consumed/with key-serde
                                          value-serde))))
 
 (defn stream->topic
   ([stream topic]
-   (stream->topic stream topic {:key-serde (string-serde)
-                                :value-serde (string-serde)}))
-  ([stream topic {:keys [key-serde value-serde]}]
+   (stream->topic stream topic {}))
+  ([stream topic {:keys [key-serde value-serde]
+                   :or {key-serde (string-serde)
+                        value-serde (string-serde)}}]
    (.to stream topic (Produced/with key-serde
                                     value-serde))))
 
