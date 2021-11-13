@@ -135,3 +135,17 @@
          (build-topology config)
          cleanup-topology         ;;TODO: conditionilize, does not apply in production
          start-topology)))
+
+
+;; helpers: thinking phase, subject to change
+
+(defn transform
+  "for simple single stream to single stream transforms with map-values / map-kv / filter / .."
+  [builder streams]
+  (mapv (fn [{:keys [from to via with]
+              :or {with map-values}}]
+          (-> (topic->stream builder from)
+              (with via)
+              (stream->topic to)))
+        streams))
+
