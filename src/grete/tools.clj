@@ -21,6 +21,11 @@
       name
       (s/replace #"-" ".")))
 
+(defn to-coll [x]
+  (if (coll? x)
+    x
+    [x]))
+
 (defn fmv
   "apply f to each value v of map m"
   [m f]

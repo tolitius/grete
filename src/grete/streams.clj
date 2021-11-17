@@ -13,6 +13,7 @@
            [org.apache.kafka.streams.kstream Consumed
                                              KStream
                                              Produced
+                                             Predicate
                                              ValueMapper
                                              KeyValueMapper]))
 
@@ -95,8 +96,11 @@
   (apply [_ v]
     (fun v)))
 
-(defn map-values [stream fun]
-  (.mapValues stream (FunValueMapper. fun)))
+(defn map-values
+  ([fun]
+   (partial map-values fun))
+  ([fun stream]
+   (.mapValues stream (FunValueMapper. fun))))
 
 (defn to-kv [[k v]]
   (KeyValue. k v))
@@ -107,8 +111,22 @@
     (-> (fun k v)
         to-kv)))
 
-(defn map-kv [stream fun]
-  (.map stream (FunKeyValueMapper. fun)))
+(defn map-kv
+  ([fun]
+   (partial map-kv fun))
+  ([fun stream]
+   (.map stream (FunKeyValueMapper. fun))))
+
+(deftype FunPredicate [fun]
+  Predicate
+  (test [_ k v]
+    (boolean (fun k v))))
+
+(defn filter-kv
+  ([fun]
+   (partial filter-kv fun))
+  ([fun stream]
+   (.filter stream (FunPredicate. fun))))
 
 ;; topology plumbing
 
@@ -140,12 +158,22 @@
 ;; helpers: thinking phase, subject to change
 
 (defn transform
-  "for simple single stream to single stream transforms with map-values / map-kv / filter / .."
+  "for single topic to topic streams
+   takes one or more kafka stream functions: map-kv, map-values, filter-kv, etc.
+   applies them on a stream from one topic to another
+
+   (transform builder
+    [{:from \"foo-topic\" :to \"bar-topc\" :via (k/map-kv some-fn-that-takes-k-and-v)}
+     {:from \"baz-topic\" :to \"moo-topc\" :via [(k/map-values some-fn-that-takes-value)
+                                                 (k/filter-kv some-fn-that-takes-k-and-v-and-returns-boolean)]}])"
   [builder streams]
-  (mapv (fn [{:keys [from to via with]
-              :or {with map-values}}]
-          (-> (topic->stream builder from)
-              (with via)
-              (stream->topic to)))
+  (mapv (fn [{:keys [from to via]
+              :or {via identity}}]
+          (let [funs (-> via t/to-coll reverse)
+                stream (->> (topic->stream builder from)
+                            ((apply comp funs)))]
+            (stream->topic stream to)))
         streams))
+
+
 
