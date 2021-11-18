@@ -15,7 +15,9 @@
                                              Produced
                                              Predicate
                                              ValueMapper
-                                             KeyValueMapper]))
+                                             ValueJoiner
+                                             KeyValueMapper
+                                             ForeachAction]))
 
 ;; config
 
@@ -80,6 +82,24 @@
    (.stream builder topic (Consumed/with key-serde
                                          value-serde))))
 
+(defn topic->table
+  ([builder topic]
+   (topic->table builder topic {}))
+  ([builder topic {:keys [key-serde value-serde]
+                   :or {key-serde (string-serde)
+                        value-serde (string-serde)}}]
+   (.table builder topic (Consumed/with key-serde
+                                        value-serde))))
+
+(defn topic->global-table
+  ([builder topic]
+   (topic->global-table builder topic {}))
+  ([builder topic {:keys [key-serde value-serde]
+                   :or {key-serde (string-serde)
+                        value-serde (string-serde)}}]
+   (.globalTable builder topic (Consumed/with key-serde
+                                              value-serde))))
+
 (defn stream->topic
   ([stream topic]
    (stream->topic stream topic {}))
@@ -127,6 +147,30 @@
    (partial filter-kv fun))
   ([fun stream]
    (.filter stream (FunPredicate. fun))))
+
+(deftype FunValueJoiner [fun]
+  ValueJoiner
+  (apply [_ left right]
+    (fun left right)))
+
+(defn left-join
+  ([fun]
+   (partial left-join fun))
+  ([fun stream table]
+   (.leftJoin stream table (FunValueJoiner. fun))))
+
+(deftype FunForeachAction [fun]
+  ForeachAction
+  (apply [_ k v]
+    (fun k v)
+    nil))
+
+(defn peek
+  ([fun]
+   (partial peek fun))
+  ([fun stream]
+   (.peek stream (FunForeachAction. fun))))
+
 
 ;; topology plumbing
 
