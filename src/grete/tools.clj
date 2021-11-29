@@ -40,3 +40,16 @@
         (for [[k v] m]
           [(f k) v])))
 
+(defn random-string []
+  (apply str
+         (repeatedly 8 #(rand-nth "abcdefghijklmnopqrstuvwxyz0123456789"))))
+
+(defn stream-fn->name [f]
+  (-> f
+      str
+      (s/replace #"@.*$" "")
+      (s/replace #"^.*\$" "")
+      (s/replace "__GT_" "-")
+      (s/replace "_LT__" "-")
+      (s/replace "_" "-")
+      (str ".00" (random-string))))

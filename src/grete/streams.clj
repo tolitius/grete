@@ -12,6 +12,7 @@
                                      StreamsConfig]
            [org.apache.kafka.streams.kstream Consumed
                                              KStream
+                                             Named
                                              Produced
                                              Predicate
                                              ValueMapper
@@ -111,6 +112,10 @@
 
 ;; ->fn kafka stream wrappers
 
+(defn named-as [op f]
+  (Named/as (str
+              (name op) "." (t/stream-fn->name f))))
+
 (deftype FunValueMapper [fun]
   ValueMapper
   (apply [_ v]
@@ -120,7 +125,9 @@
   ([fun]
    (partial map-values fun))
   ([fun stream]
-   (.mapValues stream (FunValueMapper. fun))))
+   (.mapValues stream
+               (FunValueMapper. fun)
+               (named-as :map-values fun))))
 
 (defn to-kv [[k v]]
   (KeyValue. k v))
@@ -135,7 +142,9 @@
   ([fun]
    (partial map-kv fun))
   ([fun stream]
-   (.map stream (FunKeyValueMapper. fun))))
+   (.map stream
+         (FunKeyValueMapper. fun)
+         (named-as :map-kv fun))))
 
 (deftype FunPredicate [fun]
   Predicate
@@ -146,7 +155,9 @@
   ([fun]
    (partial filter-kv fun))
   ([fun stream]
-   (.filter stream (FunPredicate. fun))))
+   (.filter stream
+            (FunPredicate. fun)
+            (named-as :filter fun))))
 
 (deftype FunValueJoiner [fun]
   ValueJoiner
@@ -157,7 +168,9 @@
   ([fun]
    (partial left-join fun))
   ([fun stream table]
-   (.leftJoin stream table (FunValueJoiner. fun))))
+   (.leftJoin stream
+              table
+              (FunValueJoiner. fun)))) ;; KStream.leftJoin(KTable ..) does not have a Named arg ¯\_(ツ)_/¯
 
 (deftype FunForeachAction [fun]
   ForeachAction
@@ -169,13 +182,17 @@
   ([fun]
    (partial for-each fun))
   ([fun stream]
-   (.foreach stream (FunForeachAction. fun))))
+   (.foreach stream
+             (FunForeachAction. fun)
+             (named-as :for-each fun))))
 
 (defn peek
   ([fun]
    (partial peek fun))
   ([fun stream]
-   (.peek stream (FunForeachAction. fun))))
+   (.peek stream
+          (FunForeachAction. fun)
+          (named-as :peek fun))))
 
 
 ;; topology plumbing
