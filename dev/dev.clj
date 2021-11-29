@@ -39,6 +39,6 @@
       (k/stream->topic "stars-with-planets")))
 
 (defn start []
-  (let [topology (k/stream-on! config make-streams)]
+  (let [streams (k/stream-on! config make-streams)]
     (Thread/sleep 1000)
-    (k/stop-topology topology)))
+    (k/stop-streams streams)))

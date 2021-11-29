@@ -165,6 +165,12 @@
     (fun k v)
     nil))
 
+(defn for-each
+  ([fun]
+   (partial for-each fun))
+  ([fun stream]
+   (.foreach stream (FunForeachAction. fun))))
+
 (defn peek
   ([fun]
    (partial peek fun))
@@ -174,29 +180,33 @@
 
 ;; topology plumbing
 
-(defn build-topology [config builder]
-  (KafkaStreams. (.build builder)
-                 (to-stream-config config)))
+(defn make-streams [config builder]
+  (let [topology (.build builder)]
+    {:topology topology
+     :streams (KafkaStreams. topology
+                             (to-stream-config config))}))
 
-(defn start-topology [streams]
-  (.start streams)
+(defn describe-topology [streams]
+  (-> streams :topology .describe))
+
+(defn start-streams [streams]
+  (.start (-> streams :streams))
   streams)
 
-(defn cleanup-topology [streams]
-  (.cleanUp streams)
+(defn cleanup-streams [streams]
+  (.cleanUp (-> streams :streams))
   streams)
 
-(defn stop-topology [streams]
-  (.close streams)
+(defn stop-streams [streams]
+  (.close (-> streams :streams))
   streams)
 
 (defn stream-on! [config make-topology]
-  (let [builder (stream-builder)]
-    (make-topology builder)
-    (->> builder
-         (build-topology config)
-         cleanup-topology         ;;TODO: conditionilize, does not apply in production
-         start-topology)))
+  (let [builder (stream-builder)
+        _       (make-topology builder)        ;; custom fn, can't rely on it returning a builder
+        streams (make-streams config builder)]
+    (start-streams streams)
+    streams))                                  ;; returns {:streams .. :topology ..}
 
 
 ;; helpers: thinking phase, subject to change
@@ -218,6 +228,3 @@
                             ((apply comp funs)))]
             (stream->topic stream to)))
         streams))
-
-
-
