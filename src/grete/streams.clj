@@ -179,6 +179,9 @@
     nil))
 
 (defn for-each
+  "you would use foreach to cause side effects based on the input data (similar to peek)
+   and then stop further processing of the input data
+   (unlike peek, which is not a terminal operation)"
   ([fun]
    (partial for-each fun))
   ([fun stream]
@@ -187,6 +190,11 @@
              (named-as :for-each fun))))
 
 (defn peek
+  "performs a stateless action on each record, and returns an unchanged stream. (details)
+   you would use peek to cause side effects based on the input data (similar to foreach)
+   and continue processing the input data (unlike foreach, which is a terminal operation)
+   peek returns the input stream as-is; if you need to modify the input stream, use map or mapValues instead
+   peek is helpful for use cases such as logging or tracking metrics or for debugging and troubleshooting"
   ([fun]
    (partial peek fun))
   ([fun stream]
@@ -236,12 +244,14 @@
    (transform builder
     [{:from \"foo-topic\" :to \"bar-topc\" :via (k/map-kv some-fn-that-takes-k-and-v)}
      {:from \"baz-topic\" :to \"moo-topc\" :via [(k/map-values some-fn-that-takes-value)
-                                                 (k/filter-kv some-fn-that-takes-k-and-v-and-returns-boolean)]}])"
+                                                 (k/filter-kv some-fn-that-takes-k-and-v-and-returns-boolean)]}
+     {:from \"zoo-topic\"                  :via (k/for-each some-fn-that-takes-k-and-v)}])"
   [builder streams]
   (mapv (fn [{:keys [from to via]
               :or {via identity}}]
           (let [funs (-> via t/to-coll reverse)
                 stream (->> (topic->stream builder from)
                             ((apply comp funs)))]
-            (stream->topic stream to)))
+            (when to
+              (stream->topic stream to))))
         streams))
