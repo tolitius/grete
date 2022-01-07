@@ -4,7 +4,7 @@
   <packaging>jar</packaging>
   <groupId>tolitius</groupId>
   <artifactId>grete</artifactId>
-  <version>0.1.8003-SNAPSHOT</version>
+  <version>0.1.8004-SNAPSHOT</version>
   <name>grete</name>
   <description>is gregor's sister that adds a threadpool and a scheduler</description>
   <url>https://github.com/tolitius/grete</url>
