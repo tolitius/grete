@@ -1,7 +1,7 @@
 {:paths ["src" "classes"]
 
- :deps {org.clojure/tools.logging {:mvn/version "1.1.0"}
-        metosin/jsonista {:mvn/version "0.3.4"}
+ :deps {org.clojure/tools.logging {:mvn/version "1.2.4"}
+        metosin/jsonista {:mvn/version "0.3.5"}
         org.apache.kafka/kafka-streams {:mvn/version "3.0.0"}}
 
  :aliases {:dev {:extra-paths ["dev" "dev-resources"]
