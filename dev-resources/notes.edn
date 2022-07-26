@@ -22,4 +22,7 @@
                :enable-auto-commit "false"
                :auto-offset-reset "earliest"
                :key-deserializer "org.apache.kafka.common.serialization.ByteArrayDeserializer"
-               :session-timeout-ms "30000"}}})
+               :session-timeout-ms "30000"
+               ; :ssl-keystore-certificate-chain "SUPA SECRET"
+               ; :ssl-keystore-key               "SUPA KEY"
+               }}})

@@ -53,3 +53,12 @@
       (s/replace "_LT__" "-")
       (s/replace "_" "-")
       (str ".00" (random-string))))
+
+(defn cloak-secrets [{:keys [ssl-keystore-certificate-chain
+                             ssl-keystore-key] :as config}]
+  (if (or ssl-keystore-key
+          ssl-keystore-certificate-chain)
+    (-> config
+        (assoc :ssl-keystore-certificate-chain "****")
+        (assoc :ssl-keystore-key "****"))
+    config))

@@ -2,7 +2,8 @@
   (:require [clojure.tools.logging :as log]
             [clojure.string :as s]
             [grete.gregor :as gregor]
-            [grete.scheduler :as sch]))
+            [grete.scheduler :as sch]
+            [grete.tools :as t]))
 
 (defn to-prop [k]
   (-> k name (s/replace #"-" ".")))
@@ -57,7 +58,7 @@
    (.poll consumer timeout)))
 
 (defn consumer [conf]
-  (log/info "consumer config:" (edn-to-consumer conf))
+  (log/info "consumer config:" (t/cloak-secrets conf))
   (->> (edn-to-consumer conf)
        (apply gregor/consumer)))
 
@@ -85,7 +86,8 @@
       (let [c (consumer (dissoc conf :threads :poll-ms))]
         (log/info "subscribing to:" (gregor/subscription c))
         (.submit pool #(consume c process running? poll-ms t))))
-    (log/info "started" threads "consumers ->" conf)
+    (log/info "started" threads "consumers ->"
+              (t/cloak-secrets conf))
     {:pool pool :running? running?}))
 
 (defn stop-consumers [{:keys [pool running?]}]

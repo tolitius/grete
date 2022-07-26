@@ -1,3 +1,8 @@
+# 0.1.8005
+
+- [add](src/grete/streams.clj) kafka streams
+- cloak ssl secrets (key/cert)
+
 # 0.1.7
 
 - add AOT back to support grete's Java API
