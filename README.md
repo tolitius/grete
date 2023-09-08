@@ -170,7 +170,7 @@ static Map<String, List<ConsumerRecord<byte[], byte[]>>> groupByTopic(ConsumerRe
 }
 ```
 
-this is the "`process`" function from a previuos example with a group by topic:
+this is the "`process`" function from a previous example with a group by topic:
 
 ```java
 static void process(ConsumerRecords<byte[], byte[]> records) {
