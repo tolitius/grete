@@ -32,6 +32,15 @@
   ([producer topic key msg]
    (gregor/send producer topic key msg)))
 
+(defn send-then!
+  "dummy gregor send-then wrap to:
+    1. give it a '!'
+    2. avoid requiring another ns to 'send-then'"
+  ([producer topic msg then]
+   (gregor/send-then producer topic msg then))
+  ([producer topic key msg then]
+   (gregor/send-then producer topic key msg then)))
+
 (defn close [producer]
   (gregor/close producer))
 

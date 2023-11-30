@@ -13,6 +13,7 @@ the idea behind `grete` is to be able to start a farm of kafka consumers that li
 - [spilling the beans](#spilling-the-beans)
   - [produce](#produce)
   - [consume](#consume)
+  - [callbacks](#callbacks)
 - [Java API](#java-api)
   - [several topics at once](#several-topics-at-once)
 - [License](#license)
@@ -104,6 +105,43 @@ as with other thread pools, it's a good idea to shut them down once we done work
 => (g/stop-consumers consumers)
 ```
 
+### callbacks
+
+a kafka producer has an internal queue which accepts all the calls to produce events, and when the queue reaches a certain size OR a particular timeout is fired it sends this "batch" of events to the server / broker.
+
+hence the kafka publishing process is asynchronous by design.
+
+once the events are published to the broker, kafka producer informs the calling API about the status via an optional callback.
+
+this callback is a function that would be passed to arguments after the event is published:
+
+* `metadata` in a form of
+```clojure
+{:offset 42
+ :partition 13
+ :topic "eagle-nebula"}
+```
+* and, in case of a problem, an `exception`
+
+this callback can be provided to a `send-then!` function:
+
+```clojure
+=> (g/send-then! p "foos" "{:answer 42}"
+        (fn [metadata exception]
+         (println {:meta metadata
+                   :exception exception})))
+
+#object[org.apache.kafka.clients.producer.internals.FutureRecordMetadata 0x753e4eb5 "org.apache.kafka.clients.producer.internals.FutureRecordMetadata@753e4eb5"]
+{:meta {:offset 2
+        :partition 0
+        :topic foos}
+ :exception nil}
+
+;; this part 👆 is returned to a producer via a callback
+;; this part 👇 is returned to a consumer
+
+picked up 1 events: ({:value {:answer 42}, :key nil, :partition 0, :topic foos, :offset 2, :timestamp 1701364230786, :timestamp-type CreateTime})
+```
 
 ## Java API
 
