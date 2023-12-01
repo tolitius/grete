@@ -107,13 +107,15 @@ as with other thread pools, it's a good idea to shut them down once we done work
 
 ### callbacks
 
-a kafka producer has an internal queue which accepts all the calls to produce events, and when the queue reaches a certain size OR a particular timeout is fired it sends this "batch" of events to the server / broker.
+a kafka producer has an internal accumulator (kept in [Deque](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Deque.html)) where it stores all the events before sending them out to the server (a.k.a. broker). when it is ready to send them, it splits the events stored in the accumulator in batches (controlled by a "`batch.size`" prop) and sends them out batch by batch.
+
+the wait time before the actual "publish | send" is controlled via a "`linger.ms`" producer configuration property that maintains the balance of latency vs. throughput.
 
 hence the kafka publishing process is asynchronous by design.
 
-once the events are published to the broker, kafka producer informs the calling API about the status via an optional callback.
+once the events are published to the broker, kafka producer informs the calling API about the status via an optional _callback_.
 
-this callback is a function that would be passed to arguments after the event is published:
+this callback is a function that takes two arguments:
 
 * `metadata` in a form of
 ```clojure
@@ -123,13 +125,13 @@ this callback is a function that would be passed to arguments after the event is
 ```
 * and, in case of a problem, an `exception`
 
-this callback can be provided to a `send-then!` function:
+this callback can be provided to a grete's `send-then!` function:
 
 ```clojure
 => (g/send-then! p "foos" "{:answer 42}"
-        (fn [metadata exception]
-         (println {:meta metadata
-                   :exception exception})))
+     (fn [metadata exception]
+       (println {:meta metadata
+                 :exception exception})))
 
 #object[org.apache.kafka.clients.producer.internals.FutureRecordMetadata 0x753e4eb5 "org.apache.kafka.clients.producer.internals.FutureRecordMetadata@753e4eb5"]
 {:meta {:offset 2
@@ -229,7 +231,7 @@ static void process(ConsumerRecords<byte[], byte[]> records) {
 
 ## License
 
-Copyright © 2020 tolitius
+Copyright © 2023 tolitius
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
