@@ -1,42 +1,37 @@
 (ns grete.java-api
-  (:require [clojure.edn :as edn]
-            [clojure.tools.logging :as log]
-            [clojure.walk :refer [keywordize-keys]]
+  (:require [clojure.tools.logging :as log]
             [grete.tools :as t]
             [grete.core :as g])
-  (:import [org.apache.kafka.clients.consumer KafkaConsumer
-                                              ConsumerRecords]))
+  (:import [java.util HashMap Map]
+           [java.util.function BiConsumer]
+           [org.apache.kafka.clients.consumer KafkaConsumer ConsumerRecords]))
 
 (gen-class
   :name tolitius.Grete
-  :methods [^{:static true} [startConsumers [java.util.function.BiConsumer
-                                             java.util.Map] java.util.Map]
-            ^{:static true} [stopConsumers [java.util.Map] void]
-            ^{:static true} [resetOffsets [java.util.Map
-                                           String
-                                           Long] void]
-            ^{:static true} [toMap [java.util.Map] java.util.Map]])
+  :methods [^{:static true} [startConsumers [BiConsumer Map] Map]
+            ^{:static true} [stopConsumers [Map] void]
+            ^{:static true} [resetOffsets [Map String Long] void]
+            ^{:static true} [toMap [Map] Map]])
 
-(defn -startConsumers [consume config]
+(defn -startConsumers [^BiConsumer consume ^Map config]
   (let [f (fn [^KafkaConsumer consumer
                ^ConsumerRecords records]
             (.accept consume consumer records))
-        edn-config (-> (t/fmk config keyword)
+        edn-config (-> (update-keys config keyword)
                        (update :topics t/s->seq)
-                       (update :threads t/parse-long)
-                       (update :poll-ms t/parse-long))]
+                       (update :threads parse-long)
+                       (update :poll-ms parse-long))]
     (log/info "starting consumers with:" edn-config)
     (g/run-consumers f edn-config)))
 
-(defn -stopConsumers [consumers]
+(defn -stopConsumers [^Map consumers]
   (g/stop-consumers consumers))
 
-(defn -resetOffsets [config topic pnum]
-  (let [edn-conf (-> (t/fmk config keyword)
+(defn -resetOffsets [^Map config ^String topic ^Long pnum]
+  (let [edn-conf (-> (update-keys config keyword)
                      (dissoc :topics :threads :poll-ms))
         consumer (g/consumer edn-conf)]
     (g/reset-offsets consumer topic pnum)))
 
-(defn -toMap [m]
-  (-> (t/fmk m name)
-      (java.util.HashMap.)))
+(defn -toMap [^Map m]
+  (HashMap. ^Map (update-keys m name)))

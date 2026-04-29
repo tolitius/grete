@@ -3,13 +3,17 @@
             [clojure.string :as s]
             [grete.gregor :as gregor]
             [grete.scheduler :as sch]
-            [grete.tools :as t]))
+            [grete.tools :as t])
+  (:import [java.util.concurrent ExecutorService]
+           [org.apache.kafka.clients.consumer Consumer]
+           [org.apache.kafka.clients.producer Producer]
+           [org.apache.kafka.common TopicPartition]))
 
 (defn to-prop [k]
   (-> k name (s/replace #"-" ".")))
 
 (defn to-props
-  "ranames keys by converting them to strings and substituting dashes with periods
+  "renames keys by converting them to strings and substituting dashes with periods
    only does top level keys"
   [conf]
   (into {}
@@ -41,8 +45,8 @@
   ([producer topic key msg then]
    (gregor/send-then producer topic key msg then)))
 
-(defn close [producer]
-  (gregor/close producer))
+(defn close [^Producer producer]
+  (.close producer))
 
 (defn- edn-to-consumer [{:keys [bootstrap-servers
                                 group-id
@@ -59,11 +63,11 @@
       seq))
 
 (defn poll
-  "fetches sequetially from the last consumed offset
+  "fetches sequentially from the last consumed offset
    return 'org.apache.kafka.clients.consumer.ConsumerRecords' currently available to the consumer (via a single poll)
    if a 'timeout' param is 0, returns immediately with any records that are available now."
-  ([consumer] (poll consumer 100))
-  ([consumer timeout]
+  ([^Consumer consumer] (poll consumer 100))
+  ([^Consumer consumer ^long timeout]
    (.poll consumer timeout)))
 
 (defn consumer [conf]
@@ -74,7 +78,7 @@
 (defn consume
   "the 'process' function will take 'org.apache.kafka.clients.consumer.ConsumerRecords'
    which can be turns to a seq of maps with 'consumer-records->maps'"
-  [consumer process running? ms n]
+  [^Consumer consumer process running? ms n]
   (log/info "starting" (inc n) "consumer")
   (while @running?
     (try
@@ -84,7 +88,7 @@
           (gregor/commit-offsets! consumer)))
       (catch Throwable t
         (log/error "kafka: could not consume a message" t))))
-  (gregor/close consumer))
+  (.close consumer))
 
 (defn run-consumers [process {:keys [threads poll-ms] :as conf}]
   (let [running? (atom true)
@@ -94,17 +98,17 @@
     (dotimes [t threads]
       (let [c (consumer (dissoc conf :threads :poll-ms))]
         (log/info "subscribing to:" (gregor/subscription c))
-        (.submit pool #(consume c process running? poll-ms t))))
+        (.submit pool ^Runnable #(consume c process running? poll-ms t))))
     (log/info "started" threads "consumers ->"
               (t/cloak-secrets conf))
     {:pool pool :running? running?}))
 
 (defn stop-consumers [{:keys [pool running?]}]
   (reset! running? false)
-  (.shutdown pool))
+  (.shutdown ^ExecutorService pool))
 
 (defn offsets [c]
-  (for [tp (gregor/assignment c)]
+  (for [^TopicPartition tp (gregor/assignment c)]
     (let [p (.partition tp)
           t (.topic tp)]
       {:topic t :partition p :offset (gregor/committed c t p)})))
