@@ -46,7 +46,7 @@
    (gregor/send-then producer topic key msg then)))
 
 (defn close [^Producer producer]
-  (.close producer))
+  (gregor/close producer))
 
 (defn- edn-to-consumer [{:keys [bootstrap-servers
                                 group-id

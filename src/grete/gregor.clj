@@ -2,7 +2,8 @@
   "this namespace is originally developed by Cody Canning: https://github.com/ccann as a part of https://github.com/ccann/gregor
    it is moved 'into' grete to avoid dependency since 'gregor' did not seem to be actively maintained."
   (:refer-clojure :exclude [flush send])
-  (:import [java.util.regex Pattern]
+  (:import [java.time Duration]
+           [java.util.regex Pattern]
            [org.apache.kafka.common TopicPartition]
            [org.apache.kafka.clients.consumer Consumer KafkaConsumer
                                               ConsumerRecord OffsetAndMetadata OffsetCommitCallback
@@ -85,6 +86,32 @@
    :offset         (.offset record)
    :timestamp      (.timestamp record)
    :timestamp-type (.toString (.timestampType record))})
+
+
+(defprotocol Closeable
+  "Provides two ways to close things: a default one with `(.close thing)` and the one
+   with the specified timeout (in milliseconds)."
+  (close [this]
+         [this timeout]))
+
+
+(extend-protocol Closeable
+  KafkaProducer
+  (close
+    ([p] (.close p))
+    ([p timeout]
+     ;; Tries to close the producer cleanly within the specified timeout.
+     ;; If the close does not complete within the timeout, fail any pending send
+     ;; requests and force close the producer
+     (.close ^KafkaProducer p (Duration/ofMillis timeout))))
+  KafkaConsumer
+  (close
+    ([c] (.close c))
+    ([p timeout]
+     ;; Tries to close the consumer cleanly within the specified timeout.
+     ;; If the consumer is unable to complete offset commits and gracefully leave
+     ;; the group before the timeout expires, the consumer is force closed.
+     (.close ^KafkaConsumer p (Duration/ofMillis timeout)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;
