@@ -2,15 +2,16 @@
   "this namespace is originally developed by Cody Canning: https://github.com/ccann as a part of https://github.com/ccann/gregor
    it is moved 'into' grete to avoid dependency since 'gregor' did not seem to be actively maintained."
   (:refer-clojure :exclude [flush send])
-  (:import [org.apache.kafka.common TopicPartition]
+  (:import [java.time Duration]
+           [java.util.regex Pattern]
+           [org.apache.kafka.common TopicPartition]
            [org.apache.kafka.clients.consumer Consumer KafkaConsumer
                                               ConsumerRecord OffsetAndMetadata OffsetCommitCallback
                                               ConsumerRebalanceListener]
            [org.apache.kafka.clients.producer Producer KafkaProducer Callback
                                               ProducerRecord]
-           [java.util.concurrent TimeUnit]
-           [org.apache.kafka.clients.admin AdminClient NewTopic]
-           [java.util Properties Map]
+           [org.apache.kafka.clients.admin AdminClient DeleteTopicsResult NewTopic]
+           [java.util Collection Properties Map]
            [org.apache.kafka.clients CommonClientConfigs])
   (:require [clojure.string :as str]))
 
@@ -20,7 +21,7 @@
 (def ^:no-doc byte-array-serializer "org.apache.kafka.common.serialization.ByteArraySerializer")
 
 (defn- as-properties
-  [m]
+  ^Properties [^Map m]
   (let [ps (Properties.)]
     (doseq [[k v] m] (.setProperty ps k v))
     ps))
@@ -59,6 +60,7 @@
 
 
 (defn- reify-crl
+  ^ConsumerRebalanceListener
   [assigned-cb revoked-cb]
   (reify ConsumerRebalanceListener
     (onPartitionsAssigned [this partitions]
@@ -88,9 +90,9 @@
 
 (defprotocol Closeable
   "Provides two ways to close things: a default one with `(.close thing)` and the one
-   with the specified timeout."
+   with the specified timeout (in milliseconds)."
   (close [this]
-    [this timeout]))
+         [this timeout]))
 
 
 (extend-protocol Closeable
@@ -101,7 +103,7 @@
      ;; Tries to close the producer cleanly within the specified timeout.
      ;; If the close does not complete within the timeout, fail any pending send
      ;; requests and force close the producer
-     (.close p timeout TimeUnit/SECONDS)))
+     (.close ^KafkaProducer p (Duration/ofMillis timeout))))
   KafkaConsumer
   (close
     ([c] (.close c))
@@ -109,7 +111,7 @@
      ;; Tries to close the consumer cleanly within the specified timeout.
      ;; If the consumer is unable to complete offset commits and gracefully leave
      ;; the group before the timeout expires, the consumer is force closed.
-     (.close p timeout TimeUnit/SECONDS))))
+     (.close ^KafkaConsumer p (Duration/ofMillis timeout)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -189,11 +191,11 @@
   ([^Consumer consumer]
    (.commitSync consumer))
   ([^Consumer consumer offsets]
-   (let [m (into {} (for [{:keys [topic partition offset metadata]} offsets]
-                      [(topic-partition topic partition)
-                       (if metadata
-                         (offset-and-metadata offset metadata)
-                         (offset-and-metadata offset))]))]
+   (let [^Map m (into {} (for [{:keys [topic partition offset metadata]} offsets]
+                           [(topic-partition topic partition)
+                            (if metadata
+                              (offset-and-metadata offset metadata)
+                              (offset-and-metadata offset))]))]
      (.commitSync consumer m))))
 
 
@@ -220,7 +222,7 @@
 
 (defn poll
   "Return a seq of consumer records currently available to the consumer (via a single poll).
-   Fetches sequetially from the last consumed offset.
+   Fetches sequentially from the last consumed offset.
 
    A consumer record is represented as a clojure map with corresponding keys:
    `:value`, `:key`, `:partition`, `:topic`, `:offset`
@@ -228,8 +230,8 @@
    `timeout` - the time, in milliseconds, spent waiting in poll if data is not
    available. If 0, returns immediately with any records that are available now.
    Must not be negative."
-  ([consumer] (poll consumer 100))
-  ([consumer timeout]
+  ([^Consumer consumer] (poll consumer 100))
+  ([^Consumer consumer ^long timeout]
    (->> (.poll consumer timeout)
         (map consumer-record->map)
         (seq))))
@@ -268,13 +270,13 @@
 
 (defn seek!
   "Overrides the fetch offsets that the consumer will use on the next poll."
-  [^Consumer consumer topic partition offset]
+  [^Consumer consumer ^String topic ^Integer partition ^long offset]
   (.seek consumer (topic-partition topic partition) offset))
 
 
 (defn seek-to!
   "Seek to the `:beginning` or `:end` offset for each of the given partitions."
-  [consumer offset topic partition & tps]
+  [^Consumer consumer offset topic partition & tps]
   (assert (contains? #{:beginning :end} offset) "offset must be :beginning or :end")
   (let [tps (->tps "seek-to!" topic partition tps)]
     (case offset
@@ -295,8 +297,10 @@
    the optional functions are a callback interface to trigger custom actions when the set
    of partitions assigned to the consumer changes."
   [^Consumer consumer topics-or-regex & [partitions-assigned-fn partitions-revoked-fn]]
-  (.subscribe consumer topics-or-regex
-              (reify-crl partitions-assigned-fn partitions-revoked-fn)))
+  (let [crl (reify-crl partitions-assigned-fn partitions-revoked-fn)]
+    (if (instance? Pattern topics-or-regex)
+      (.subscribe consumer ^Pattern topics-or-regex crl)
+      (.subscribe consumer ^Collection topics-or-regex crl))))
 
 
 (defn subscription
@@ -371,7 +375,7 @@
   ([^String topic ^Integer partition key value]
    (ProducerRecord. topic (int partition) key value))
   ([^String topic ^Integer partition ^Long timestamp key value]
-   (ProducerRecord. topic (int partition) (long timestamp) key value)))
+   (ProducerRecord. topic ^Integer (int partition) ^Long (long timestamp) key value)))
 
 
 (defn- send-record
@@ -488,5 +492,6 @@
     topic: The name of the topic to delete."
   [^Map conf ^String topic]
   (assert (contains? conf CommonClientConfigs/BOOTSTRAP_SERVERS_CONFIG) "bootstrap server config not present")
-  (with-open [^AdminClient ac (AdminClient/create conf)]
-    (.all (.deleteTopics ac [topic]))))
+  (let [^Collection topics [topic]]
+    (with-open [^AdminClient ac (AdminClient/create conf)]
+      (.all ^DeleteTopicsResult (.deleteTopics ac topics)))))

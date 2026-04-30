@@ -1,17 +1,16 @@
 (ns grete.streams
   (:require [clojure.string :as s]
-            [grete.tools :as t]
-            [jsonista.core :as json])
+            [grete.tools :as t])
   (:import [clojure.lang Reflector]
            [java.util Properties]
-           [org.apache.kafka.common.serialization Serde
-                                                  Serdes]
+           [org.apache.kafka.common.serialization Serdes]
            [org.apache.kafka.streams KafkaStreams
                                      KeyValue
                                      StreamsBuilder
-                                     StreamsConfig]
+                                     StreamsConfig Topology]
            [org.apache.kafka.streams.kstream Consumed
                                              KStream
+                                             KTable
                                              Named
                                              Produced
                                              Predicate
@@ -49,7 +48,7 @@
         (println "(!)" msg)
         (throw (RuntimeException. msg e))))))
 
-(defn to-stream-config [m]
+(defn ^Properties to-stream-config [m]
   (let [ps (Properties.)]
     (doseq [[k v] m]
       (.put ps (to-stream-prop k)
@@ -74,45 +73,41 @@
 
 ;; directing flow
 
-(defn topic->stream
-  ([builder topic]
+(defn ^KStream topic->stream
+  ([^StreamsBuilder builder ^String topic]
    (topic->stream builder topic {}))
-  ([builder topic {:keys [key-serde value-serde]
-                   :or {key-serde (string-serde)
-                        value-serde (string-serde)}}]
-   (.stream builder topic (Consumed/with key-serde
-                                         value-serde))))
+  ([^StreamsBuilder builder ^String topic {:keys [key-serde value-serde]
+                                           :or   {key-serde   (string-serde)
+                                                  value-serde (string-serde)}}]
+   (.stream builder topic (Consumed/with key-serde value-serde))))
 
 (defn topic->table
-  ([builder topic]
+  ([^StreamsBuilder builder ^String topic]
    (topic->table builder topic {}))
-  ([builder topic {:keys [key-serde value-serde]
-                   :or {key-serde (string-serde)
-                        value-serde (string-serde)}}]
-   (.table builder topic (Consumed/with key-serde
-                                        value-serde))))
+  ([^StreamsBuilder builder ^String topic {:keys [key-serde value-serde]
+                                           :or   {key-serde   (string-serde)
+                                                  value-serde (string-serde)}}]
+   (.table builder topic (Consumed/with key-serde value-serde))))
 
 (defn topic->global-table
-  ([builder topic]
+  ([^StreamsBuilder builder ^String topic]
    (topic->global-table builder topic {}))
-  ([builder topic {:keys [key-serde value-serde]
-                   :or {key-serde (string-serde)
-                        value-serde (string-serde)}}]
-   (.globalTable builder topic (Consumed/with key-serde
-                                              value-serde))))
+  ([^StreamsBuilder builder ^String topic {:keys [key-serde value-serde]
+                                           :or   {key-serde   (string-serde)
+                                                  value-serde (string-serde)}}]
+   (.globalTable builder topic (Consumed/with key-serde value-serde))))
 
 (defn stream->topic
-  ([stream topic]
+  ([^KStream stream ^String topic]
    (stream->topic stream topic {}))
-  ([stream topic {:keys [key-serde value-serde]
-                   :or {key-serde (string-serde)
-                        value-serde (string-serde)}}]
-   (.to stream topic (Produced/with key-serde
-                                    value-serde))))
+  ([^KStream stream ^String topic {:keys [key-serde value-serde]
+                                   :or   {key-serde   (string-serde)
+                                          value-serde (string-serde)}}]
+   (.to stream topic (Produced/with key-serde value-serde))))
 
 ;; ->fn kafka stream wrappers
 
-(defn named-as [op f]
+(defn ^Named named-as [op f]
   (Named/as (str
               (name op) "." (t/stream-fn->name f))))
 
@@ -124,12 +119,12 @@
 (defn map-values
   ([fun]
    (partial map-values fun))
-  ([fun stream]
+  ([fun ^KStream stream]
    (.mapValues stream
                (FunValueMapper. fun)
                (named-as :map-values fun))))
 
-(defn to-kv [[k v]]
+(defn ^KeyValue to-kv [[k v]]
   (KeyValue. k v))
 
 (deftype FunKeyValueMapper [fun]
@@ -141,7 +136,7 @@
 (defn map-kv
   ([fun]
    (partial map-kv fun))
-  ([fun stream]
+  ([fun ^KStream stream]
    (.map stream
          (FunKeyValueMapper. fun)
          (named-as :map-kv fun))))
@@ -154,7 +149,7 @@
 (defn filter-kv
   ([fun]
    (partial filter-kv fun))
-  ([fun stream]
+  ([fun ^KStream stream]
    (.filter stream
             (FunPredicate. fun)
             (named-as :filter fun))))
@@ -167,7 +162,7 @@
 (defn left-join
   ([fun]
    (partial left-join fun))
-  ([fun stream table]
+  ([fun ^KStream stream ^KTable table]
    (.leftJoin stream
               table
               (FunValueJoiner. fun)))) ;; KStream.leftJoin(KTable ..) does not have a Named arg ¯\_(ツ)_/¯
@@ -184,7 +179,7 @@
    (unlike peek, which is not a terminal operation)"
   ([fun]
    (partial for-each fun))
-  ([fun stream]
+  ([fun ^KStream stream]
    (.foreach stream
              (FunForeachAction. fun)
              (named-as :for-each fun))))
@@ -197,7 +192,7 @@
    peek is helpful for use cases such as logging or tracking metrics or for debugging and troubleshooting"
   ([fun]
    (partial peek fun))
-  ([fun stream]
+  ([fun ^KStream stream]
    (.peek stream
           (FunForeachAction. fun)
           (named-as :peek fun))))
@@ -205,25 +200,25 @@
 
 ;; topology plumbing
 
-(defn make-streams [config builder]
+(defn make-streams [config ^StreamsBuilder builder]
   (let [topology (.build builder)]
     {:topology topology
      :streams (KafkaStreams. topology
                              (to-stream-config config))}))
 
 (defn describe-topology [streams]
-  (-> streams :topology .describe))
+  (.describe ^Topology (:topology streams)))
 
 (defn start-streams [streams]
-  (.start (-> streams :streams))
+  (.start ^KafkaStreams (:streams streams))
   streams)
 
 (defn cleanup-streams [streams]
-  (.cleanUp (-> streams :streams))
+  (.cleanUp ^KafkaStreams (:streams streams))
   streams)
 
 (defn stop-streams [streams]
-  (.close (-> streams :streams))
+  (.close ^KafkaStreams (:streams streams))
   streams)
 
 (defn stream-on! [config make-topology]

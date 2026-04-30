@@ -1,10 +1,7 @@
 (ns grete.scheduler
-  (:require [clojure.tools.logging :as log]
-            [grete.tools :as t])
+  (:require [clojure.tools.logging :as log])
   (:import [java.util.concurrent.atomic AtomicInteger]
-           [java.util.concurrent ThreadFactory Executors TimeUnit ScheduledExecutorService ExecutorService]
-           [java.time Instant ZoneId ZonedDateTime]
-           [java.time.format DateTimeFormatter]))
+           [java.util.concurrent Future ThreadFactory Executors TimeUnit ExecutorService]))
 
 (deftype GreteThreadFactory [name ^AtomicInteger thread-counter]
   ThreadFactory
@@ -19,13 +16,13 @@
           (uncaughtException [_ thread ex]
             (log/error (format "error in thread id: %s name: %s" (.getId thread) (.getName thread)) ex)))))))
 
-(defn new-executor [name num-threads]
+(defn ^ExecutorService new-executor [name num-threads]
    (Executors/newFixedThreadPool num-threads
                                  (GreteThreadFactory. name
                                                         (AtomicInteger. 0))))
 
 (defn run-fun [name fun threads]
-  (let [threads (or (t/parse-long (str threads)) 1)
+  (let [threads (or (parse-long (str threads)) 1)
         pool (new-executor name threads)
         running? (atom true)
         ^Runnable spinner #(while @running?
@@ -37,7 +34,7 @@
 
     {:pool pool :running? running?}))
 
-(defn stop [f]
+(defn stop [^Future f]
   (.cancel f true))
 
 (defn every [interval fun & {:keys [initial-delay time-unit]
