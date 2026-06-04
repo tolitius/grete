@@ -8,7 +8,7 @@
                                               ConsumerRebalanceListener]
            [org.apache.kafka.clients.producer Producer KafkaProducer Callback
                                               ProducerRecord]
-           [java.util.concurrent TimeUnit]
+           [java.time Duration]
            [org.apache.kafka.clients.admin AdminClient NewTopic]
            [java.util Properties Map]
            [org.apache.kafka.clients CommonClientConfigs])
@@ -101,7 +101,7 @@
      ;; Tries to close the producer cleanly within the specified timeout.
      ;; If the close does not complete within the timeout, fail any pending send
      ;; requests and force close the producer
-     (.close p timeout TimeUnit/SECONDS)))
+     (.close p (Duration/ofSeconds timeout))))
   KafkaConsumer
   (close
     ([c] (.close c))
@@ -109,7 +109,7 @@
      ;; Tries to close the consumer cleanly within the specified timeout.
      ;; If the consumer is unable to complete offset commits and gracefully leave
      ;; the group before the timeout expires, the consumer is force closed.
-     (.close p timeout TimeUnit/SECONDS))))
+     (.close p (Duration/ofSeconds timeout)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -202,12 +202,13 @@
    offset will be used as the position for the consumer in the event of a failure. If no
    offsets have been committed, return `nil`."
   [^Consumer consumer ^String topic ^Integer partition]
-  (when-let [offset (.committed consumer (topic-partition topic partition))]
-    (let [m {:offset (.offset offset)
-             :metadata (.metadata offset)}]
-      (if (clojure.string/blank? (:metadata m))
-        (assoc m :metadata nil)
-        m))))
+  (let [tp (topic-partition topic partition)]
+    (when-let [offset (get (.committed consumer #{tp}) tp)]
+      (let [m {:offset (.offset offset)
+               :metadata (.metadata offset)}]
+        (if (clojure.string/blank? (:metadata m))
+          (assoc m :metadata nil)
+          m)))))
 
 
 (defn pause
@@ -230,7 +231,7 @@
    Must not be negative."
   ([consumer] (poll consumer 100))
   ([consumer timeout]
-   (->> (.poll consumer timeout)
+   (->> (.poll consumer (Duration/ofMillis timeout))
         (map consumer-record->map)
         (seq))))
 
