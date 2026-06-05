@@ -3,7 +3,8 @@
             [clojure.string :as s]
             [grete.gregor :as gregor]
             [grete.scheduler :as sch]
-            [grete.tools :as t]))
+            [grete.tools :as t])
+  (:import [java.time Duration]))
 
 (defn to-prop [k]
   (-> k name (s/replace #"-" ".")))
@@ -64,7 +65,7 @@
    if a 'timeout' param is 0, returns immediately with any records that are available now."
   ([consumer] (poll consumer 100))
   ([consumer timeout]
-   (.poll consumer timeout)))
+   (.poll consumer (Duration/ofMillis timeout))))
 
 (defn consumer [conf]
   (log/info "consumer config:" (t/cloak-secrets conf))
