@@ -14,6 +14,7 @@ the idea behind `grete` is to be able to start a farm of kafka consumers that li
   - [produce](#produce)
   - [consume](#consume)
   - [callbacks](#callbacks)
+- [stream it](#stream-it) 
 - [Java API](#java-api)
   - [several topics at once](#several-topics-at-once)
 - [License](#license)
@@ -145,6 +146,11 @@ this callback can be provided to a grete's `send-then!` function:
 picked up 1 events: ({:value {:answer 42}, :key nil, :partition 0, :topic foos, :offset 2, :timestamp 1701364230786, :timestamp-type CreateTime})
 ```
 
+## stream it
+
+> [!NOTE]
+> TODO: add docs with examples of [streams](https://github.com/tolitius/grete/blob/master/src/grete/streams.clj)
+
 ## Java API
 
 consumer props:
@@ -231,7 +237,7 @@ static void process(ConsumerRecords<byte[], byte[]> records) {
 
 ## License
 
-Copyright © 2023 tolitius
+Copyright © 2026 tolitius
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
