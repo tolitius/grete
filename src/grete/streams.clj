@@ -23,8 +23,8 @@
 ;; config
 
 
-; {:application-id-config "ecaf-snoop"
-;  :client-id-config "augment-plan-snooper"
+; {:application-id-config "mars-explorer"
+;  :client-id-config "discovery"
 ;  :bootstrap-servers-config "localhost:9092"
 ;  :default-key-serde-class-config (-> (k/string-serde) .getClass .getName)
 ;  :default-value-serde-class-config (-> (k/string-serde) .getClass .getName)
