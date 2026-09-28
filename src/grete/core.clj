@@ -78,51 +78,36 @@
               error
               (or phase :unknown)))
 
-(defn- resolve-error-handlers
-  "picks a handler per phase, falling back to ':on-error', then to the default"
-  [{:keys [on-error on-poll-error on-process-error on-commit-error]}]
-  (let [on-error (or on-error default-on-error)]
-    {:poll    (or on-poll-error on-error)
-     :process (or on-process-error on-error)
-     :commit  (or on-commit-error on-error)}))
-
-(defn- run-phase
-  "runs a single consumer phase, reporting a failure to that phase's handler.
-   returns '::failed' when the phase throws, so the caller can stop early"
-  [handlers context phase thunk]
-  (try
-    (thunk)
-    (catch Throwable error
-      (try
-        ((get handlers phase) (assoc context
-                                     :phase phase
-                                     :error error))
-        (catch Throwable handler-error
-          (log/error "kafka: consumer error handler failed" handler-error)))
-      ::failed)))
-
-(defn- consume-once
-  [consumer process ms n handlers]
-  (let [context          {:consumer        consumer
-                          :consumer-number n}
-        run              (partial run-phase handlers)
-        consumer-records (run context :poll #(poll consumer ms))]
-    (when (and consumer-records
-               (not= ::failed consumer-records))
-      (let [result (run context :process #(process consumer consumer-records))]
-        (when-not (= ::failed result)
-          (run (assoc context :result result) :commit #(gregor/commit-offsets! consumer)))))))
-
 (defn consume
   "the 'process' function will take 'org.apache.kafka.clients.consumer.ConsumerRecords'
    which can be turns to a seq of maps with 'consumer-records->maps'"
   ([consumer process running? ms n]
    (consume consumer process running? ms n {}))
-  ([consumer process running? ms n options]
-   (let [handlers (resolve-error-handlers options)]
+  ([consumer process running? ms n {:keys [on-error on-poll-error on-process-error on-commit-error]}]
+   (let [on-error (or on-error default-on-error)
+         handlers {:poll    (or on-poll-error on-error)
+                   :process (or on-process-error on-error)
+                   :commit  (or on-commit-error on-error)}]
      (log/info "starting" (inc n) "consumer")
      (while @running?
-       (consume-once consumer process ms n handlers))
+       (let [phase  (volatile! :poll)
+             result (volatile! nil)]
+         (try
+           (when-let [consumer-records (poll consumer ms)]
+             (vreset! phase :process)
+             (vreset! result (process consumer consumer-records))
+             (vreset! phase :commit)
+             (gregor/commit-offsets! consumer))
+           (catch Throwable error
+             (try
+               ((handlers @phase)
+                (cond-> {:consumer        consumer
+                         :consumer-number n
+                         :phase           @phase
+                         :error           error}
+                  (= :commit @phase) (assoc :result @result)))
+               (catch Throwable handler-error
+                 (log/error "kafka: consumer error handler failed" handler-error)))))))
      (gregor/close consumer))))
 
 (defn run-consumers
