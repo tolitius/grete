@@ -14,12 +14,12 @@
    only does top level keys"
   [conf]
   (into {}
-    (for [[k v] conf]
-      [(to-prop k) v])))
+        (for [[k v] conf]
+          [(to-prop k) v])))
 
 (defn producer [{:keys [bootstrap-servers] :as conf}]
   (let [props (-> (dissoc conf :bootstrap-servers
-                               :topics)
+                          :topics)
                   to-props)]
     (gregor/producer bootstrap-servers
                      props)))
@@ -72,11 +72,10 @@
   (->> (edn-to-consumer conf)
        (apply gregor/consumer)))
 
-(defn default-on-error
-  [{:keys [phase error]}]
-  (log/errorf "kafka: could not consume a message: %s phase: %s"
-              error
-              (or phase :unknown)))
+(defn default-on-error [{:keys [phase error]
+                         :or {phase :unknown}}]
+  (log/errorf error "kafka: could not consume a message (failed to %s)"
+              (name phase)))
 
 (defn consume
   "the 'process' function will take 'org.apache.kafka.clients.consumer.ConsumerRecords'
