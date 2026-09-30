@@ -13,6 +13,7 @@ the idea behind `grete` is to be able to start a farm of kafka consumers that li
 - [spilling the beans](#spilling-the-beans)
   - [produce](#produce)
   - [consume](#consume)
+    - [consumer errors](#consumer-errors)
   - [callbacks](#callbacks)
 - [stream it](#stream-it) 
 - [Java API](#java-api)
@@ -105,6 +106,28 @@ as with other thread pools, it's a good idea to shut them down once we done work
 ```clojure
 => (g/stop-consumers consumers)
 ```
+
+#### consumer errors
+
+a consumer loop has three phases, and each one can be handled on its own with `:on-poll-error`, `:on-process-error` and `:on-commit-error`. a phase specific handler wins over `:on-error`, which in turn wins over the default handler that logs the error:
+
+```clojure
+=> (g/run-consumers process
+                    (get-in config [:kafka :consumer])
+                    {:on-process-error send-to-dead-letter-topic
+                     :on-error         on-error})
+```
+
+every handler receives a map with:
+
+| key | |
+|---|---|
+| `:consumer` | the `KafkaConsumer` that failed |
+| `:consumer-number` | index of the consumer thread in the farm |
+| `:phase` | `:poll`, `:process` or `:commit` |
+| `:error` | the `Throwable` that was thrown |
+| `:result` | what `process` returned, on `:commit` failures only |
+
 
 ### callbacks
 
